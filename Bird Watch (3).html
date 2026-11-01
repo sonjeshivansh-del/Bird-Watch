@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bird Watch</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f3f8f2;--card:#fff;--text:#18241a;--muted:#5a6b5c;--primary:#2e7d32;--chip:#e1eee0;--border:#d3dfd1;--warn:#c62828;--good:#2e7d32;--land:#dcebd7;--water:#bfe0ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101610;--card:#192119;--text:#e5ede5;--muted:#9db09e;--primary:#81c784;--chip:#243126;--border:#2d3b2f;--warn:#ef9a9a;--good:#81c784;--land:#22301f;--water:#1d3a46}}
+:root[data-theme="dark"]{--bg:#101610;--card:#192119;--text:#e5ede5;--muted:#9db09e;--primary:#81c784;--chip:#243126;--border:#2d3b2f;--warn:#ef9a9a;--good:#81c784;--land:#22301f;--water:#1d3a46}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;padding-bottom:76px}
+main{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:0}h2{font-size:1.1rem;margin:0 0 8px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.badge{font-size:.75rem;background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+select,button,input{font:inherit;color:inherit}
+select,input{padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card);max-width:100%}
+input{width:100%;margin-bottom:8px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.chip{border:1px solid var(--border);background:var(--chip);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:40px}
+.chip.on{background:var(--primary);color:var(--bg);border-color:var(--primary)}
+.btn{background:var(--primary);color:var(--bg);border:0;border-radius:12px;padding:12px 18px;cursor:pointer;min-height:44px;font-weight:600}
+.btn.alt{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.btn.sm{min-height:36px;padding:6px 12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.stat{background:var(--chip);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:1.15rem}.stat span{font-size:.78rem;color:var(--muted)}
+.up{color:var(--good)}.down{color:var(--warn)}
+svg{width:100%;height:auto;display:block}
+.scroll{overflow-x:auto}
+#map{touch-action:none;cursor:grab;border-radius:12px;background:#0c2f5a;user-select:none}
+#map text{font-family:system-ui,sans-serif}
+.alert{border-left:5px solid var(--warn);padding-left:12px}.alert.ok{border-color:var(--good)}
+.muted{color:var(--muted);font-size:.88rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.log{border-top:1px solid var(--border);padding:8px 0}
+.err{color:var(--warn);margin:0 0 8px}
+pre{background:var(--chip);border-radius:10px;padding:10px;overflow-x:auto;font-size:.8rem}
+.auth{max-width:380px;margin:8vh auto 0}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeOut{to{opacity:0;transform:translateY(-10px) scale(.97)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.enter{animation:fadeUp .5s cubic-bezier(.2,.8,.2,1) both}
+.leave{animation:fadeOut .3s ease-in both}
+#nav.enter{animation-name:slideUp}
+@media (prefers-reduced-motion:reduce){.enter,.leave{animation:none}}
+fieldset{border:1px solid var(--border);border-radius:12px;margin:0 0 8px;padding:8px 12px}
+legend{padding:0 6px}
+.radios label{display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer}
+input[type=radio]{width:auto;margin:0}
+code{background:var(--chip);border-radius:6px;padding:1px 5px;font-size:.85em}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes ripple{from{transform:scale(1);opacity:.6}to{transform:scale(3.4);opacity:0}}
+.me-dot{animation:blink 1.1s ease-in-out infinite}
+.me-ring{transform-box:fill-box;transform-origin:center;animation:ripple 1.6s ease-out infinite}
+@media (prefers-reduced-motion:reduce){.me-dot,.me-ring{animation:none}}
+#sheetwrap[hidden],#namewrap[hidden]{display:none}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50}
+.sheet{position:fixed;z-index:51;left:0;right:0;margin:0 auto;top:max(10vh,env(safe-area-inset-top,0px));width:min(92vw,420px);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:fadeUp .25s ease both}
+.switch{display:flex;gap:10px;align-items:center;padding:8px 0;cursor:pointer}
+.switch input{width:20px;height:20px;margin:0}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--muted);min-height:56px}
+nav button.on{color:var(--primary);font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<header><h1>🐦 Bird Watch</h1><span class="badge" id="net" role="status"></span><div class="row" id="who"></div></header>
+<div id="app"><p class="muted">Loading database…</p></div>
+</main>
+<nav id="nav" hidden>
+<button data-tab="map">Live map</button><button data-tab="trends">Trends</button>
+<button data-tab="alerts">Alerts</button><button data-tab="device">Device</button>
+</nav>
+<script>
+// ================= SAMPLE DATABASE (IndexedDB; in-memory fallback) =================
+const KEYS={users:"email",species:"id",units:"id",daily:"k",hourly:"k",detections:"id"};
+const DB={idb:null,mem:{},
+ async open(){
+  for(const s in KEYS)this.mem[s]=new Map();
+  try{this.idb=await new Promise((res,rej)=>{const r=indexedDB.open("birdwatch",1);
+   r.onupgradeneeded=()=>{for(const s in KEYS)r.result.createObjectStore(s,{keyPath:KEYS[s]})};
+   r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){this.idb=null}
+ },
+ req(s,mode,fn){return new Promise((res,rej)=>{const t=this.idb.transaction(s,mode);let rq;
+  try{rq=fn(t.objectStore(s))}catch(e){rej(e);return}t.oncomplete=()=>res(rq?rq.result:undefined);t.onerror=()=>rej(t.error)})},
+ async all(s){if(!this.idb)return[...this.mem[s].values()];return this.req(s,"readonly",o=>o.getAll())},
+ async get(s,k){if(!this.idb)return this.mem[s].get(k);return this.req(s,"readonly",o=>o.get(k))},
+ async range(s,lo,hi){if(!this.idb)return[...this.mem[s].entries()].filter(([k])=>k>=lo&&k<=hi).map(e=>e[1]);
+  return this.req(s,"readonly",o=>o.getAll(IDBKeyRange.bound(lo,hi)))},
+ async putMany(s,rows){if(!this.idb){rows.forEach(r=>this.mem[s].set(r[KEYS[s]],r));return}
+  return this.req(s,"readwrite",o=>{rows.forEach(r=>o.put(r))})},
+ async clear(s){if(!this.idb){this.mem[s].clear();return}return this.req(s,"readwrite",o=>o.clear())}
+};
+const SEED_SP=[
+{id:"robin",name:"American Robin",color:"#e65100",b:220,g:.03},{id:"cardinal",name:"Northern Cardinal",color:"#c62828",b:140,g:.08},
+{id:"mallard",name:"Mallard",color:"#2e7d32",b:180,g:-.05},{id:"heron",name:"Great Blue Heron",color:"#546e7a",b:40,g:-.16},
+{id:"eagle",name:"Bald Eagle",color:"#5d4037",b:12,g:.18},{id:"hawk",name:"Red-tailed Hawk",color:"#8d6e63",b:25,g:.01},
+{id:"wren",name:"Carolina Wren",color:"#f9a825",b:95,g:-.14}];
+const UNITS=[{id:"A",name:"Unit A",lat:40.6168,lon:-73.8212},{id:"B",name:"Unit B",lat:40.6275,lon:-73.833},{id:"C",name:"Unit C",lat:40.6089,lon:-73.8441}]; // SAMPLE GPS positions
+const p2=n=>String(n).padStart(2,"0");
+const hex=x=>p2(x.toString(16));
+const iso=d=>d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const prof=h=>.25+1.2*Math.exp(-Math.pow(h-6,2)/8)+.6*Math.exp(-Math.pow(h-18,2)/10);
+async function hash(pw,salt){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+pw));return[...new Uint8Array(b)].map(hex).join("")}
+async function seed(){
+ const now=new Date(),today=iso(now);let last=null;try{last=localStorage.getItem("bw.seed")}catch(e){}
+ if(!(await DB.get("users","demo@birdwatch.app"))){const salt="demo";
+  await DB.putMany("users",[{email:"demo@birdwatch.app",name:"Demo Researcher",salt,hash:await hash("birdwatch123",salt)}])}
+ const SEEDV=today+"|v3";if(last===SEEDV&&(await DB.all("species")).length)return;
+ for(const s of["species","units","daily","hourly","detections"])await DB.clear(s);
+ await DB.putMany("species",SEED_SP.map(({id,name,color})=>({id,name,color})));
+ await DB.putMany("units",UNITS);
+ const start=new Date(now.getFullYear()-9,0,1),total=Math.round((new Date(now.getFullYear(),now.getMonth(),now.getDate())-start)/864e5),daily=[],hourly=[];
+ SEED_SP.forEach((s,i)=>{const r=rng(i*97+7);
+  for(let d=0;d<=total;d++){const dt=new Date(start.getFullYear(),start.getMonth(),start.getDate()+d),key=iso(dt),t=d/total;
+   const v=Math.max(1,Math.round(s.b*(1+s.g*(t-1))*(1+.15*Math.sin((dt.getMonth()-3)/12*2*Math.PI))*(1+(r()-.5)*.14)));
+   daily.push({k:s.id+"|"+key,sp:s.id,date:key,count:v});
+   if(total-d<7)for(let h=0,mx=total-d===0?now.getHours():23;h<=mx;h++)
+    hourly.push({k:s.id+"|"+key+"|"+p2(h),sp:s.id,date:key,hour:h,count:Math.max(0,Math.round(v/15*prof(h)*(1+(r()-.5)*.3)))});
+  }});
+ await DB.putMany("daily",daily);await DB.putMany("hourly",hourly);
+ const r=rng(5);
+ await DB.putMany("detections",Array.from({length:14},(_,i)=>{const u=UNITS[i%3],sp=SEED_SP[Math.floor(r()*SEED_SP.length)],ts=Date.now()-i*240000;
+  return{id:u.id+"|"+ts+"|"+sp.id,sp:sp.id,unit:u.id,ts,lat:+(u.lat+(r()-.5)*.0012).toFixed(6),lon:+(u.lon+(r()-.5)*.0016).toFixed(6),acc:+(4+r()*8).toFixed(1),src:"gps"}}));
+ try{localStorage.setItem("bw.seed",SEEDV)}catch(e){}
+}
+// ---- one detection event (from any device) -> database ----
+const num=v=>typeof v==="number"&&isFinite(v);
+async function ingest(ev){
+ const [sps,us]=await Promise.all([DB.all("species"),DB.all("units")]),name=String(ev.species||"");
+ let sp=sps.find(s=>s.id===name||s.name.toLowerCase()===name.toLowerCase());
+ if(!sp){sp={id:name.toLowerCase().replace(/\W+/g,"-"),name,color:"#607d8b"};await DB.putMany("species",[sp])}
+ const gps=num(ev.lat)&&num(ev.lon)&&Math.abs(ev.lat)<=90&&Math.abs(ev.lon)<=180;
+ let u=us.find(x=>x.id===String(ev.unit)||x.rid===String(ev.unit)||x.name===ev.unit);
+ if(!u){u={id:String(ev.unit),rid:String(ev.unit),name:String(ev.unit),lat:gps?ev.lat:null,lon:gps?ev.lon:null};await DB.putMany("units",[u]);
+  if(!nameQ.some(q=>q.id===u.id)){const first=!nameQ.length;nameQ.push({id:u.id,isNew:true});if(first)nameDialog()}}
+ else if(u.lat==null&&gps){u.lat=ev.lat;u.lon=ev.lon;await DB.putMany("units",[u])}
+ const ts=ev.ts||Date.now(),id=u.id+"|"+ts+"|"+sp.id;
+ if(await DB.get("detections",id))return;
+ // exact position: the device's own GPS if sent, else the unit's fixed location, else none (never invented)
+ const lat=gps?ev.lat:u.lat,lon=gps?ev.lon:u.lon;
+ await DB.putMany("detections",[{id,sp:sp.id,unit:u.id,ts,lat,lon,acc:num(ev.acc)?ev.acc:null,src:gps?"gps":(lat==null?"none":"unit")}]);
+ const d=new Date(ts),date=iso(d),hk=sp.id+"|"+date+"|"+p2(d.getHours()),dk=sp.id+"|"+date;
+ const h=(await DB.get("hourly",hk))||{k:hk,sp:sp.id,date,hour:d.getHours(),count:0};h.count++;
+ const dd=(await DB.get("daily",dk))||{k:dk,sp:sp.id,date,count:0};dd.count++;
+ await DB.putMany("hourly",[h]);await DB.putMany("daily",[dd]);
+}
+// ================= queries =================
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const ha=h=>(h%12||12)+(h<12?" AM":" PM");
+const pct=a=>a[0]?(a[a.length-1]-a[0])/a[0]*100:0;
+const fp=p=>(p>=0?"+":"")+p.toFixed(1)+"%";
+const RANGES={day:"Today",week:"Past week",month:"Past month",year:"Past year",decade:"10 years"};
+async function hrs(sp,d){const by={};(await DB.range("hourly",sp+"|"+iso(d)+"|00",sp+"|"+iso(d)+"|23")).forEach(r=>by[r.hour]=r.count);return by}
+function avgBy(rows,keyFn,keys){const g={};rows.forEach(r=>{const k=keyFn(r);(g[k]=g[k]||[]).push(r.count)});return keys.map(k=>g[k]?g[k].reduce((a,b)=>a+b,0)/g[k].length:0)}
+async function seriesFor(sp,key){
+ const now=new Date(),ago=n=>new Date(now.getFullYear(),now.getMonth(),now.getDate()-n);
+ if(key==="day"){
+  const [t,y]=await Promise.all([hrs(sp,ago(0)),hrs(sp,ago(1))]),n=now.getHours()+1;
+  const pts=Array.from({length:n},(_,h)=>({x:h/23,v:t[h]||0})),ts=pts.reduce((a,p)=>a+p.v,0),ys=pts.reduce((a,_,h)=>a+(y[h]||0),0);
+  return{pts,ticks:[0,3,6,9,12,15,18,21].map(h=>({x:h/23,l:ha(h)})),cap:"Detections per hour · x-axis is the time of day",latest:ts,ll:"Today so far",trend:ys?(ts-ys)/ys*100:0,tl:"vs. yesterday, same hours"};
+ }
+ if(key==="week"||key==="month"){
+  const n=key==="week"?7:30,by={};
+  (await DB.range("daily",sp+"|"+iso(ago(n-1)),sp+"|"+iso(ago(0)))).forEach(r=>by[r.date]=r.count);
+  const vals=Array.from({length:n},(_,i)=>by[iso(ago(n-1-i))]||0);
+  return{pts:vals.map((v,i)=>({x:i/(n-1),v})),cap:"Detections per day",latest:vals[n-1],ll:"Latest day",trend:pct(vals),tl:"over this period",
+   ticks:vals.map((_,i)=>i).filter(i=>key==="week"||i%5===0||i===n-1).map(i=>({x:i/(n-1),l:key==="week"?WD[ago(n-1-i).getDay()]:ago(n-1-i).getDate()}))};
+ }
+ if(key==="year"){
+  const ms=Array.from({length:12},(_,i)=>new Date(now.getFullYear(),now.getMonth()-11+i,1)),ks=ms.map(d=>d.getFullYear()+"-"+p2(d.getMonth()+1));
+  const vals=avgBy(await DB.range("daily",sp+"|"+ks[0]+"-01",sp+"|~"),r=>r.date.slice(0,7),ks).map(Math.round);
+  return{pts:vals.map((v,i)=>({x:i/11,v})),ticks:ms.map((d,i)=>({x:i/11,l:MN[d.getMonth()]})),cap:"Average detections per day, by month",latest:vals[11],ll:"This month (avg/day)",trend:pct(vals),tl:"over 12 months"};
+ }
+ const ys=Array.from({length:10},(_,i)=>String(now.getFullYear()-9+i));
+ const vals=avgBy(await DB.range("daily",sp+"|",sp+"|~"),r=>r.date.slice(0,4),ys).map(Math.round);
+ return{pts:vals.map((v,i)=>({x:i/9,v})),ticks:ys.map((l,i)=>({x:i/9,l})),cap:"Average detections per day, by year",latest:vals[9],ll:"This year (avg/day)",trend:pct(vals),tl:"over 10 years"};
+}
+async function decadeAll(sps){return Promise.all(sps.map(async s=>({s,p:(await seriesFor(s.id,"decade")).trend})))}
+function habitat(ds){const a=ds.reduce((x,d)=>x+d.p,0)/(ds.length||1);return a>=0?["Excellent","up"]:a>=-5?["Good","up"]:a>=-10?["Fair","down"]:["Poor","down"]}
+// ================= views =================
+const S={tab:"map",sp:"robin",range:"week",sel:null,drag:false,v:null,md:null,entering:false,authAnim:true,me:null,showMe:false,locMsg:"",sat:true,tilesOK:null,user:null,authMode:"in",authErr:""};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=document.getElementById("app");
+const lastEmail=()=>{try{return localStorage.getItem("bw.email")||""}catch(e){return""}};
+function authView(){
+ const up=S.authMode==="up";
+ return `<div class="card auth"><h2>${up?"Create account":"Sign in"}</h2>
+ <form id="authform" autocomplete="on">
+ ${up?`<input id="a-name" placeholder="Your name" autocomplete="name" required>`:""}
+ <input id="a-email" type="email" placeholder="Email" autocomplete="username" value="${esc(lastEmail())}" required>
+ <input id="a-pw" type="password" placeholder="Password (6+ characters)" autocomplete="${up?"new-password":"current-password"}" required>
+ ${up?`<fieldset class="radios"><legend><b>Are we allowed to use your location?</b></legend>
+ <label><input type="radio" name="loc" value="yes" required> Yes, show where I am on the map</label>
+ <label><input type="radio" name="loc" value="no"> No, don’t use my location</label>
+ <p class="muted">Only used to show you on the map while the app is open. Your position isn’t saved.</p></fieldset>`:""}
+ ${S.authErr?`<p class="err" role="alert">${esc(S.authErr)}</p>`:""}
+ <div class="row"><button class="btn" type="submit">${up?"Create account":"Sign in"}</button>
+ <button class="btn alt" type="button" data-auth="${up?"in":"up"}">${up?"I have an account":"Create account"}</button></div></form>
+ <p class="muted" style="margin-top:12px">Demo account: demo@birdwatch.app / birdwatch123<br>Accounts live only in this browser’s sample database. Real sign-in needs a server.</p></div>`;
+}
+// ---------- real-coordinate map: Web Mercator + simplified continent outlines ----------
+const LAND=[
+["g","-9,37 -9.5,43 -2,43.5 -1.5,46 -4.5,48.5 -1.5,49.5 2,51 5,53.5 8.5,55 8,57 10.5,57.7 10.5,54.5 14,54 19,54.5 21,57 24,59.5 30,60 22.5,60.5 21.5,63 25,65.5 22,65.8 17.5,62 18.5,59.5 16,56 12.5,56 11,59 7,58 5,60.5 5.5,62.5 10,64 14,67.5 19,70 26,71 31,70 40,67 34,66 40,64.5 44,66 44,68.5 54,68.5 60,69 68,68.5 72,72.5 80,73 87,75 100,77 105,77.5 113,74 128,73 140,72.5 150,71.5 160,70 170,70 180,69 180,65 178,64.5 170,60 163,59 163,56 156,51 156,57.5 152,59 143,59 135,55 141,52 140,48 135,43 130,42.5 129.5,41 129,36 126.5,34.5 126,37.5 124.5,39.8 121.5,39 121,41 118,39 119,37 122.5,37 120,35 121.5,31.5 122,29.5 120,26 117,23.5 114,22.3 110.5,21 108,21.5 106.5,19 108.8,15 109,12 105,8.7 104.8,10.5 100.5,13.5 100,8 103.5,1.5 101,2.7 98.5,8.5 98.5,16 97,17 94.5,16 94.5,19.5 91.5,22.5 88,21.5 86.5,20 84,18 80.2,15.5 80,10 77.5,8 76,10 73,17 72.8,21 70.5,20.8 68.5,23.5 66.5,25.3 61.5,25 57.5,25.8 56.5,27 54,26.5 51,27.7 50,30 48,30 48,28.5 50,26 51.5,24.5 54,24 56,26 56.5,24.5 59.8,22.5 58,20.5 55,17 52,16 45,13 43,13.2 42.5,16 39,21.5 35,28 34.5,29.5 32.5,30 35,32.8 36,35.5 36.5,36.8 34,36.5 30,36.3 27.3,37 26.3,39.4 26.5,40.5 23.5,40 24,38 22,36.5 21.5,38 19.5,41 19.5,42 16,43.5 13.5,45.5 12.3,45.3 12.5,44 16,41.9 18.5,40.2 16.5,38.5 16,38 15.7,40 13,41.2 10.5,43 8.8,44.3 6,43 3.2,43.2 3,42 0.5,40.5 -0.3,39 0,38.5 -1.5,37 -5,36.1"],
+["g","-168,66 -162,70 -156,71.3 -141,69.6 -128,70 -115,68.5 -100,68 -95,72 -85,69.5 -82,66 -88,64 -94,60 -92,57 -82,55 -79,52 -78,57 -77,62 -72,61 -65,60 -62,57 -56,52 -60,48 -66,45 -70,43 -70,41.5 -74,40.5 -76,37 -76,35 -81,31.5 -80,27 -80,25.2 -82,26 -83,29.5 -86,30.3 -89,30 -90,29 -94,29.5 -97,27.5 -97.5,22 -96,19 -94,18.2 -91,18.8 -90.5,21 -87,21.5 -87.5,18 -88,15.8 -84,15.5 -83.5,11 -82,9 -79.5,9.3 -77.5,8.5 -78,7.5 -80,7.5 -80,8.3 -83,8.3 -85.7,10 -87.5,13 -91,14 -94,16 -97,16 -101,17.5 -105.5,20 -105.5,22.5 -109,25.5 -112.5,29.5 -114.7,31.7 -117,32.5 -120.5,34.5 -122.5,37.5 -124,40.5 -124.5,43 -124,46.5 -123,48.5 -126,50 -130,54.5 -134,58 -140,59.8 -148,60.5 -152,59 -158,57 -163,55 -158,58.5 -162,60 -165,62 -164,64.5 -168,65.5"],
+["g","-77.5,8.5 -72,12 -64,10.5 -60,8.5 -52,5 -50,0 -44,-2.5 -35,-5.5 -35,-9 -39,-14 -39,-18 -41,-22 -45,-23.5 -48.5,-26 -48,-29 -53,-34 -57,-35 -57.5,-38 -62,-39 -65,-41 -64,-43 -67,-46 -66,-48 -69,-51 -68.5,-53 -71,-54.5 -74,-52 -75.5,-47 -74,-42 -73.5,-37 -71.5,-30 -70.5,-23 -70.3,-18.5 -75,-15 -77,-12 -79.5,-7 -81,-5 -80,-2 -80,1 -78.5,2 -77.5,6"],
+["t","-5.5,35.8 -2,35.2 3,36.8 10,37.2 11,33.5 15,32.3 19.5,30.5 20,32 25,32 29,30.8 32.3,31.2 32.5,30 33.5,27.5 36.5,22 38.5,18 41.5,14.5 43.2,12.5 44.5,10.4 51.2,11.8 51,10 48,5 44,1 41,-2 39,-5 40.5,-10.5 40.5,-15 35,-20 35.5,-24 32.8,-26 32.5,-29 28,-33 25,-34 20,-34.8 18.4,-34 17.2,-30.5 15,-26.5 14.4,-22.5 11.7,-17.2 13.5,-12 12.5,-6 9,-1 9.5,3.8 7.5,4.4 4.5,6.3 1,6 -2,4.8 -7.5,4.4 -11,6.8 -13.5,9.5 -17,14.7 -16.5,19.5 -17,21 -15,26 -10,29.5 -9.7,31.5 -6.8,34"],
+["t","114,-22 114,-26 115,-34 118,-35 123.5,-34 129,-31.5 131.5,-31.5 135.5,-35 138,-35 140,-38 146,-39 150,-37 153,-31 153.5,-25 149,-20.5 146,-19 145,-14.5 143.5,-14 142.5,-10.8 141.5,-13 141,-17 139.5,-17.5 136.5,-15.5 136,-12 132,-11.5 130,-13 127,-14 125,-15 122,-17.5 120,-20 117,-20.7"],
+["w","-73,78 -60,82 -30,83.5 -18,81.5 -20,75 -22,70 -30,68 -40,65 -43,60 -48,61 -53,66 -55,70 -60,75 -68,76"],
+["w","-180,-84 -180,-72 -150,-75 -120,-73.5 -100,-72 -75,-73 -62,-65 -58,-63.5 -62,-70 -60,-75 -45,-78 -30,-78 -12,-71 10,-70 40,-68 60,-67 70,-69.5 90,-66 110,-66 135,-66 150,-69 165,-71 180,-68 180,-84"],
+["w","-90,73.7 -72,71.5 -61,66.5 -65,63 -74,65 -78,65 -85,70"],["w","-118,72.5 -105,73 -101,69 -112,68.5 -117,70"],["w","-90,76 -80,83 -62,82 -75,78.5 -78,76.5"],
+["g","-5.5,50 1.5,51 1.8,53 -2,55.8 -3,58.6 -5.7,58.5 -6,56 -3,54.8 -3,53.3 -5,52"],["g","-10,51.8 -6,52 -6,54.5 -8,55.2 -10,54"],
+["g","-24,65.5 -18,66.5 -13.5,65 -18,63.4 -22.5,63.8"],["g","130.5,31 132,33.5 135,33.5 140,35 141.5,38.5 141.5,41.5 140,40 139,38 136.5,37 133,35.5 130.5,33.8"],
+["g","140,42 141.5,43 145.5,43.5 142,45.5 141.5,43.7"],["g","142,46 143.5,49 143.2,54 142,53 142,49"],["g","44,-25 47,-25 50,-15.5 49.5,-12.5 47.5,-14.5 44,-17 43.5,-22"],
+["g","95,5.5 98,4 104,-1 106,-5.5 102,-4 98,0 95.5,3"],["g","109,1.5 111,2.5 115,5 118,5.5 119,1 116.5,-3 114.5,-4 110,-3 109,-1"],
+["g","105.5,-6.5 108,-6.5 114.5,-7.8 114.5,-8.7 106,-7.5"],["g","131,-1 135,-3.3 141,-2.6 147,-6 150,-10.5 143,-9 139,-8 138,-6 134,-4"],
+["g","120,18.5 122,18.5 122.5,14 124,13 121,13.5 120,15"],["g","172.7,-34.5 178.5,-37.5 175.5,-41.5 174.5,-39.5"],["g","172.5,-40.5 174,-41.5 171,-44.5 169,-46.7 166.5,-46 170,-43"],
+["g","-85,22 -80,23.2 -74,20 -77.5,19.9 -81,22.5"],["g","-74,19.8 -69,19.5 -68.5,18.4 -71,17.8 -73,18.3"],["g","-59,47.7 -55.5,51.5 -52.7,47 -55,46.7"]
+].map(([c,s])=>({c,p:s.split(" ").map(q=>q.split(",").map(Number))}));
+const MW=640,MH=420,COL={g:"#5a7d3c",t:"#a08a55",w:"#e9f0f5"};
+const prj=(lon,lat)=>{const s=Math.sin(Math.max(-85.05,Math.min(85.05,lat))*Math.PI/180);return[(lon+180)/360,.5-Math.log((1+s)/(1-s))/(4*Math.PI)]};
+const unprj=(x,y)=>[x*360-180,Math.atan(Math.sinh(Math.PI*(1-2*y)))*180/Math.PI];
+const wpx=()=>256*Math.pow(2,S.v.z);
+function setView(lon,lat,z){const q=prj(lon,lat);S.v={cx:q[0],cy:q[1],z}}
+function clampView(){const v=S.v;v.z=Math.max(1.3,Math.min(20,v.z));const w=wpx(),hh=MH/2/w;v.cx=Math.max(0,Math.min(1,v.cx));v.cy=hh>=.5?.5:Math.max(hh,Math.min(1-hh,v.cy))}
+function fitView(world){
+ const pts=world?[]:S.md.dets.filter(d=>d.lat!=null).map(d=>[d.lon,d.lat]).concat(S.md.us.filter(u=>u.lat!=null).map(u=>[u.lon,u.lat]));
+ if(!pts.length){setView(0,25,1.3);return}
+ const q=pts.map(p=>prj(p[0],p[1])),x0=Math.min(...q.map(a=>a[0])),x1=Math.max(...q.map(a=>a[0])),y0=Math.min(...q.map(a=>a[1])),y1=Math.max(...q.map(a=>a[1]));
+ const z=Math.log2(Math.min(MW*.7/Math.max(x1-x0,1e-9),MH*.7/Math.max(y1-y0,1e-9))/256);
+ S.v={cx:(x0+x1)/2,cy:(y0+y1)/2,z:Math.min(17,z)};
+}
+function inPoly(x,y,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if((p[i][1]>y)!==(p[j][1]>y)&&x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0])c=!c}return c}
+// ---- user location (kept in memory only, never stored) ----
+let locWatch=null;
+function startLoc(){
+ if(locWatch!=null||!S.user||S.user.locConsent!==true)return;
+ if(!navigator.geolocation){S.locMsg="This browser can’t share location.";return}
+ try{locWatch=navigator.geolocation.watchPosition(
+  p=>{S.me={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};S.locMsg="";if(S.sheet)showSheet();if(S.tab==="map"&&!S.drag)redraw()},
+  e=>{S.me=null;S.locMsg=e.code===1?"Your browser blocked location access. Allow it in the site settings.":"Couldn’t get your location right now.";if(S.sheet)showSheet();if(S.tab==="map")redraw()},
+  {enableHighAccuracy:true,maximumAge:5000,timeout:20000})}catch(e){S.locMsg="Location isn’t available here."}
+}
+function locateMe(){
+ S.showMe=true;
+ if(S.me){setView(S.me.lon,S.me.lat,16);drawMap();return}
+ if(!navigator.geolocation){S.locMsg="This browser can’t share location.";drawMap();return}
+ S.locMsg="Finding your location…";drawMap();
+ navigator.geolocation.getCurrentPosition(
+  p=>{S.me={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};S.locMsg="";setView(S.me.lon,S.me.lat,16);drawMap()},
+  e=>{S.locMsg=e.code===1?"Your browser blocked location access. Allow it in the site settings.":"Couldn’t get your location right now.";drawMap()},
+  {enableHighAccuracy:true,timeout:15000});
+}
+function stopLoc(){if(locWatch!=null&&navigator.geolocation)navigator.geolocation.clearWatch(locWatch);locWatch=null;S.me=null;S.showMe=false}
+async function setConsent(yes){S.user.locConsent=yes;S.showMe=yes;try{await DB.putMany("users",[S.user])}catch(e){}if(yes)startLoc();else stopLoc();render()}
+// ---- satellite-style base map (stylized) + optional real imagery tiles ----
+const BIO=[["d","-17,20 -10,27 0,30 10,31 25,30 34,25 36,17 20,14 5,14 -10,16"],["d","37,28 44,30 48,29 56,24 55,17 45,15 39,20"],["d","75,38 90,42 105,43 115,43 110,38 95,36 80,36"],["d","118,-22 135,-23 145,-25 140,-30 125,-30 117,-27"],["d","14,-18 24,-18 25,-26 20,-29 15,-26"],["d","-117,33 -108,32 -104,28 -110,28 -114,31"],["d","-71,-18 -69,-25 -70,-30 -72,-28"],["s","-70,-39 -65,-40 -66,-50 -70,-50"],["r","-74,-3 -70,3 -60,4 -52,0 -52,-8 -62,-12 -72,-10"],["r","10,3 20,4 30,3 28,-5 20,-8 12,-5"],["r","95,15 105,18 110,12 104,2 98,6"],["f","-130,62 -100,60 -70,55 -65,50 -90,50 -125,52"],["f","30,62 60,62 100,66 140,64 135,55 90,55 50,56"],["s","-105,48 -97,48 -97,32 -104,34"],["s","50,52 75,52 80,46 55,44"],["s","-15,14 30,14 30,10 -15,10"],["s","30,8 42,8 40,-8 30,-10"],["m","70,36 95,34 100,28 80,28"],["m","-123,57 -118,57 -105,40 -106,33 -111,36 -116,45 -122,50"],["m","-76,5 -72,-15 -68,-25 -70,-35 -72,-50 -71,-50 -68,-35 -66,-22 -70,-15 -73,5"]].map(([c,s])=>({c,p:s.split(" ").map(q=>q.split(",").map(Number))}));
+const BCOL={d:"#c4a76c",s:"#98a458",r:"#2b5e2c",f:"#38603a",m:"#827561"};
+function baseLayer(v,w,P,clon,clat){
+ if(v.z>7)return `<rect width="${MW}" height="${MH}" fill="${LAND.some(l=>inPoly(clon,clat,l.p))?"#4f7a3a":"#0b2d5b"}"/>`;
+ const path=pts=>"M"+pts.map(q=>P(q[0],q[1]).map(n=>n.toFixed(1)).join(",")).join("L")+"Z",fx=!S.drag,
+  sd=Math.max(1.5,Math.min(12,w/260)).toFixed(1),sw=Math.max(5,Math.min(26,w/110)),
+  y1=P(0,80)[1],y2=P(0,-65)[1],off=l=>Math.max(0,Math.min(1,(P(0,l)[1]-y1)/(y2-y1))).toFixed(4),
+  stops=[[80,"#f1f5f7"],[70,"#d5dccf"],[62,"#5d7b55"],[50,"#6f8f48"],[38,"#86a04f"],[26,"#a89a62"],[12,"#6c9440"],[0,"#3f7a34"],[-12,"#6c9440"],[-26,"#a89a62"],[-38,"#7c9a50"],[-50,"#5d7b55"],[-60,"#dfe7dc"],[-65,"#f1f5f7"]],
+  lp=LAND.map(l=>({c:l.c,d:path(l.p)})),fr=`filterUnits="userSpaceOnUse" x="0" y="0" width="${MW}" height="${MH}"`;
+ return `<defs><radialGradient id="oc" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#14508a"/><stop offset="1" stop-color="#071d3d"/></radialGradient>
+ <linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="0" y1="${y1}" x2="0" y2="${y2}">${stops.map(s=>`<stop offset="${off(s[0])}" stop-color="${s[1]}"/>`).join("")}</linearGradient>
+ <filter id="bl" ${fr}><feGaussianBlur stdDeviation="${sw/2}"/></filter><filter id="bs" ${fr}><feGaussianBlur stdDeviation="${sd}"/></filter>
+ <clipPath id="lc">${lp.map(l=>`<path d="${l.d}"/>`).join("")}</clipPath></defs>
+ <rect width="${MW}" height="${MH}" fill="url(#oc)"/>
+ ${fx?`<g filter="url(#bl)" fill="none" stroke="#3b9fcf" stroke-opacity=".6" stroke-width="${sw}">${lp.map(l=>`<path d="${l.d}"/>`).join("")}</g>`:""}
+ <g stroke="#0a2a1c" stroke-opacity=".4" stroke-width=".7">${lp.map(l=>`<path d="${l.d}" fill="${l.c==="w"?"#f0f4f6":"url(#lg)"}"/>`).join("")}</g>
+ ${fx?`<g clip-path="url(#lc)"><g filter="url(#bs)" fill-opacity=".8">${BIO.map(b=>`<path d="${path(b.p)}" fill="${BCOL[b.c]}"/>`).join("")}</g></g>`:""}`;
+}
+// Real satellite imagery (Esri World Imagery). Only loads where the host page allows images from other sites.
+const tileUrl=(z,x,y)=>`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+function tilesLayer(v,w){
+ const tz=Math.max(0,Math.min(18,Math.round(v.z))),n=Math.pow(2,tz),sz=256*Math.pow(2,v.z-tz);
+ const x0=Math.max(0,Math.floor((v.cx-MW/2/w)*n)),x1=Math.min(n-1,Math.floor((v.cx+MW/2/w)*n)),y0=Math.max(0,Math.floor((v.cy-MH/2/w)*n)),y1=Math.min(n-1,Math.floor((v.cy+MH/2/w)*n));
+ let h="";
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
+  h+=`<image href="${tileUrl(tz,x,y)}" x="${((x/n-v.cx)*w+MW/2).toFixed(2)}" y="${((y/n-v.cy)*w+MH/2).toFixed(2)}" width="${(sz+.6).toFixed(2)}" height="${(sz+.6).toFixed(2)}" preserveAspectRatio="none"/>`;
+ return h;
+}
+function drawMap(){
+ const svg=document.getElementById("map");if(!svg||!S.md)return;
+ if(!S.v)fitView(true);
+ clampView();
+ const v=S.v,w=wpx(),P=(lon,lat)=>{const q=prj(lon,lat);return[(q[0]-v.cx)*w+MW/2,(q[1]-v.cy)*w+MH/2]},c=unprj(v.cx,v.cy),clon=c[0],clat=c[1];
+ let h=baseLayer(v,w,P,clon,clat);
+ if(S.tilesOK&&S.sat)h+=tilesLayer(v,w);
+ const tl=unprj(v.cx-MW/2/w,v.cy-MH/2/w),br=unprj(v.cx+MW/2/w,v.cy+MH/2/w),lon0=tl[0],lat1=tl[1],lon1=br[0],lat0=br[1];
+ const st=[60,30,20,10,5,2,1,.5,.2,.1,.05,.02,.01,.005,.002,.001,.0005,.0002,.0001].find(s=>s*w/360>=70)||.0001,dec=st>=1?0:Math.ceil(-Math.log10(st)-1e-9);
+ let gl="",gt="";
+ for(let i=Math.ceil(lon0/st);i*st<=lon1&&i<1e7;i++){const x=P(i*st,0)[0];gl+=`<line x1="${x}" x2="${x}" y1="0" y2="${MH}"/>`;gt+=`<text x="${x+3}" y="12">${(i*st).toFixed(dec)}°</text>`}
+ for(let i=Math.ceil(lat0/st);i*st<=lat1&&i<1e7;i++){const y=P(0,i*st)[1];gl+=`<line x1="0" x2="${MW}" y1="${y}" y2="${y}"/>`;gt+=`<text x="3" y="${y-3}">${(i*st).toFixed(dec)}°</text>`}
+ h+=`<g stroke="#fff" stroke-opacity=".28" stroke-width=".7">${gl}</g><g fill="#fff" fill-opacity=".85" font-size="10">${gt}</g>`;
+ const{dets,us,spb}=S.md,mpp=40075016.686*Math.cos(clat*Math.PI/180)/w;
+ us.forEach(u=>{if(u.lat==null)return;const p=P(u.lon,u.lat);if(p[0]<-60||p[0]>MW+60||p[1]<-30||p[1]>MH+30)return;
+  h+=`<rect x="${p[0]-5}" y="${p[1]-5}" width="10" height="10" rx="2" fill="#fff" stroke="#000" stroke-width="1.5"/><text x="${p[0]+9}" y="${p[1]+4}" font-size="11" fill="#fff" stroke="#000" stroke-width="2.5" paint-order="stroke">${esc(u.name)}</text>`});
+ dets.slice().reverse().forEach(d=>{
+  if(d.lat==null)return;const p=P(d.lon,d.lat);if(p[0]<-40||p[0]>MW+40||p[1]<-40||p[1]>MH+40)return;
+  const col=(spb[d.sp]||{}).color||"#607d8b",ar=d.acc?d.acc/mpp:0,sel=S.sel===d.id;
+  if(ar>4)h+=`<circle cx="${p[0]}" cy="${p[1]}" r="${ar}" fill="${col}" fill-opacity=".18" stroke="${col}" stroke-opacity=".7"/>`;
+  h+=`<circle data-m="${esc(d.id)}" cx="${p[0]}" cy="${p[1]}" r="${sel?8:6}" fill="${col}" stroke="#fff" stroke-width="2" style="cursor:pointer"><title>${esc((spb[d.sp]||{}).name||d.sp)} · ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}</title></circle>`;
+ });
+ if(S.me&&S.showMe){const p=P(S.me.lon,S.me.lat),ar=S.me.acc/mpp;
+  if(ar>4)h+=`<circle cx="${p[0]}" cy="${p[1]}" r="${ar}" fill="#4285f4" fill-opacity=".18" stroke="#4285f4" stroke-opacity=".6"/>`;
+  h+=`<circle class="me-ring" cx="${p[0]}" cy="${p[1]}" r="7" fill="#4285f4"/><circle class="me-dot" cx="${p[0]}" cy="${p[1]}" r="7" fill="#4285f4" stroke="#fff" stroke-width="3"><title>You are here</title></circle>`}
+ const tm=mpp*110,pw=Math.pow(10,Math.floor(Math.log10(tm))),nice=[5,2,1].map(n=>n*pw).find(n=>n<=tm),len=nice/mpp;
+ h+=`<g fill="#fff" stroke="#000" stroke-width="2.5" paint-order="stroke" font-size="11"><rect x="10" y="${MH-14}" width="${len}" height="4" stroke="none"/><text x="10" y="${MH-20}" stroke-width="2.5">${nice>=1000?nice/1000+" km":nice+" m"}</text><text x="${MW-8}" y="${MH-6}" text-anchor="end" font-size="9">${S.tilesOK&&S.sat?"Imagery © Esri, Maxar, Earthstar Geographics":"stylized satellite view · sighting positions are exact"}</text></g>`;
+ svg.innerHTML=h;
+ const mi=document.getElementById("meinfo");if(mi)mi.textContent=S.me&&S.showMe?`You are here: ${S.me.lat.toFixed(6)}°, ${S.me.lon.toFixed(6)}° (accuracy ±${Math.round(S.me.acc)} m)`:(S.locMsg||"");
+ const el=document.getElementById("mapstat");if(el)el.textContent=`Center ${clat.toFixed(5)}°, ${clon.toFixed(5)}° · zoom ${v.z.toFixed(1)}`;
+}
+function zoomAt(x,y,dz){const v=S.v,w=wpx(),fx=v.cx+(x-MW/2)/w,fy=v.cy+(y-MH/2)/w;v.z+=dz;clampView();const w2=wpx();v.cx=fx-(x-MW/2)/w2;v.cy=fy-(y-MH/2)/w2;clampView()}
+async function mapView(){
+ const [ds,us,sps]=await Promise.all([DB.all("detections"),DB.all("units"),DB.all("species")]);
+ const dets=ds.sort((a,b)=>b.ts-a.ts).slice(0,50),spb=Object.fromEntries(sps.map(s=>[s.id,s])),ub=Object.fromEntries(us.map(u=>[u.id,u]));
+ S.md={dets,us,spb};
+ const m=dets.find(d=>d.id===S.sel),np=dets.filter(d=>d.lat==null).length;
+ const src={gps:"GPS position sent by the device",unit:"the unit’s fixed location (no GPS in this message)",none:"no position recorded"};
+ const ask=`<div class="card"><b>Are we allowed to use your location?</b><p class="muted">We use it only to show where you are on the map. Your position isn’t saved.</p><div class="row"><button class="btn" data-loc="yes">Yes</button><button class="btn alt" data-loc="no">No</button></div></div>`;
+ return `${S.user.locConsent===undefined?ask:""}<div class="card"><h2>Live bird sightings</h2>
+ <div class="row" style="margin-bottom:8px"><button class="chip" data-mz="world">World</button><button class="chip" data-mz="fit">Zoom to sightings</button>
+ <button class="chip" data-mz="in" aria-label="Zoom in">+</button><button class="chip" data-mz="out" aria-label="Zoom out">−</button>${S.user.locConsent===true?`<button class="chip" data-mz="me">My location</button>`:S.user.locConsent===false?`<button class="chip" data-loc="yes">Show my location</button>`:""}${S.tilesOK?`<button class="chip ${S.sat?"on":""}" data-mz="sat">Satellite imagery</button>`:""}${m&&m.lat!=null?`<button class="chip" data-mz="sel">Zoom to selected</button>`:""}</div>
+ <svg id="map" viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Map of recent bird sightings at their exact GPS coordinates"></svg>
+ <p class="muted" id="mapstat"></p><p class="muted" id="meinfo"></p>${S.tilesOK===false?(navigator.onLine?`<p class="muted">Real satellite photos can’t load on this page (claude.ai blocks map images). They load automatically when the page is hosted on your own site.</p>`:`<p class="muted">You’re offline, so satellite photos aren’t available. The built-in map still works.</p>`):""}
+ <p class="muted">${m?`<b>${esc((spb[m.sp]||{}).name||m.sp)}</b> · ${esc((ub[m.unit]||{}).name||m.unit)} · ${new Date(m.ts).toLocaleString()}<br>${m.lat!=null?`Latitude ${m.lat.toFixed(6)}°, longitude ${m.lon.toFixed(6)}°${m.acc?` (accuracy ±${m.acc} m)`:""}`:"No position recorded"}<br>Source: ${src[m.src]||src.none}`:"Drag to pan; pinch or scroll to zoom. Dots are the 50 most recent sightings at their stored coordinates (shaded circle = GPS accuracy); squares are monitoring units. Tap a dot for exact coordinates."}</p>
+ ${np?`<p class="muted">${np} recent detection${np>1?"s have":" has"} no position and ${np>1?"are":"is"} not shown.</p>`:""}
+ <div class="row">${sps.map(s=>`<span class="muted"><span style="color:${s.color}">●</span> ${esc(s.name)}</span>`).join("")}</div></div>`;
+}
+function chart(sr,color){
+ const W=600,H=240,L=44,B=30,T=10,R=12,max=Math.max(1,...sr.pts.map(p=>p.v))*1.1,x=f=>L+f*(W-L-R),y=v=>T+(H-T-B)*(1-v/max);
+ const grid=[0,.25,.5,.75,1].map(f=>{const v=Math.round(max*f);return`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="var(--muted)">${v}</text>`}).join("");
+ const th=Math.max(1,max/1.1*.02),cols=sr.pts.slice(1).map((p,i)=>{const d=p.v-sr.pts[i].v;return d>th?"#2e9e45":d<-th?"#d93a3a":"#e6b800"}),
+  gx1=x(sr.pts[0].x),gx2=x(sr.pts[sr.pts.length-1].x),
+  stops=cols.length&&gx2>gx1?[[0,cols[0]]].concat(cols.map((c,i)=>[(x((sr.pts[i].x+sr.pts[i+1].x)/2)-gx1)/(gx2-gx1),c]),[[1,cols[cols.length-1]]]):[[0,"#e6b800"],[1,"#e6b800"]],
+  grad=`<linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="${gx1}" y1="0" x2="${gx2>gx1?gx2:gx1+1}" y2="0">${stops.map(s=>`<stop offset="${s[0].toFixed(4)}" stop-color="${s[1]}"/>`).join("")}</linearGradient>`;
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(sr.cap)}"><defs>${grad}</defs>${grid}
+ ${sr.ticks.map(t=>`<line x1="${x(t.x)}" x2="${x(t.x)}" y1="${H-B}" y2="${H-B+4}" stroke="var(--muted)"/><text x="${x(t.x)}" y="${H-10}" font-size="11" text-anchor="middle" fill="var(--muted)">${t.l}</text>`).join("")}
+ <polyline points="${sr.pts.map(p=>x(p.x).toFixed(1)+","+y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="url(#tg)" stroke-width="3" stroke-linejoin="round"/>
+ ${sr.pts.map(p=>`<circle cx="${x(p.x)}" cy="${y(p.v)}" r="3.5" fill="url(#tg)"/>`).join("")}</svg>`;
+}
+async function trendsView(){
+ const sps=(await DB.all("species")).sort((a,b)=>a.name.localeCompare(b.name)),sp=sps.find(s=>s.id===S.sp)||sps[0];
+ if(!sp)return `<div class="card"><p class="muted">The database has no species yet.</p></div>`;
+ const [sr,ds]=await Promise.all([seriesFor(sp.id,S.range),decadeAll(sps)]),h=habitat(ds);
+ return `<div class="card"><h2>Population trends</h2>
+ <select id="sp" aria-label="Species">${sps.map(x=>`<option value="${x.id}" ${x.id===sp.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
+ <div class="chips" style="margin-top:8px">${Object.entries(RANGES).map(([k,l])=>`<button class="chip ${S.range===k?"on":""}" data-r="${k}">${l}</button>`).join("")}</div>
+ <div class="scroll">${chart(sr,sp.color)}</div><p class="muted">${esc(sr.cap)}</p>
+ <div class="row muted"><span><b style="color:#2e9e45">━</b> Grew</span><span><b style="color:#e6b800">━</b> Steady</span><span><b style="color:#d93a3a">━</b> Declined</span></div>
+ <p class="muted">Each stretch is colored by how it changed from the point before. Changes under 2% of the peak count show as steady.</p>
+ <div class="stats"><div class="stat"><b>${sr.latest}</b><span>${sr.ll}</span></div>
+ <div class="stat"><b class="${sr.trend>=0?"up":"down"}">${fp(sr.trend)}</b><span>${sr.tl}</span></div>
+ <div class="stat"><b class="${h[1]}">${h[0]}</b><span>Habitat health</span></div></div>
+ <p class="muted">Habitat health is a simple score from the average 10-year change across all species in the database.</p></div>`;
+}
+async function alertsView(){
+ const sps=await DB.all("species"),ds=(await decadeAll(sps)).sort((a,b)=>a.p-b.p);
+ const wk=await Promise.all(ds.map(d=>seriesFor(d.s.id,"week")));
+ const bad=ds.map((d,i)=>({...d,w:wk[i].trend})).filter(d=>d.p<=-10),good=ds.filter(d=>d.p>=15);
+ return `<div class="card"><h2>Conservation alerts</h2>
+ ${bad.length?bad.map(a=>`<div class="log alert"><b>${esc(a.s.name)}: declining</b><div class="muted">${fp(a.p)} over 10 years (${fp(a.w)} this week). May need conservation attention.</div></div>`).join(""):`<p class="muted">No declining species right now.</p>`}
+ ${good.map(a=>`<div class="log alert ok"><b>${esc(a.s.name)}: recovering</b><div class="muted">${fp(a.p)} over 10 years.</div></div>`).join("")}
+ <p class="muted">Alerts fire when a species falls 10% or more over 10 years, or rises 15% or more.</p></div>`;
+}
+// ================= device connection =================
+const DEV={kind:/Android/i.test(navigator.userAgent)?"ble":"demo",timer:null,port:null,reader:null,on:false,msg:"Not connected",url:"http://raspberrypi.local:5000/detections",since:0};
+function refresh(){if(!S.drag&&S.user&&(S.tab==="map"||S.tab==="device"))render()}
+async function demoTick(){const sps=await DB.all("species"),us=(await DB.all("units")).filter(u=>u.lat!=null);if(!us.length)return;
+ const u=us[Math.floor(Math.random()*us.length)];
+ await ingest({unit:u.id,species:sps[Math.floor(Math.random()*sps.length)].id,ts:Date.now(),lat:+(u.lat+(Math.random()-.5)*.0012).toFixed(6),lon:+(u.lon+(Math.random()-.5)*.0016).toFixed(6),acc:+(4+Math.random()*8).toFixed(1)});refresh()}
+async function connect(){
+ await disconnect(true);
+ if(DEV.kind==="demo"){DEV.on=true;DEV.msg="Connected: demo device (simulated detections)";DEV.timer=setInterval(demoTick,4000)}
+ else if(DEV.kind==="serial"){
+  if(!("serial" in navigator)){DEV.msg="Web Serial isn’t available here. Use desktop Chrome or Edge.";return}
+  try{DEV.port=await navigator.serial.requestPort();await DEV.port.open({baudRate:115200});DEV.on=true;DEV.msg="Connected: Raspberry Pi over USB serial";readLoop()}
+  catch(e){DEV.port=null;DEV.msg="Couldn’t open the serial port: "+(e.message||e)}
+ }else if(DEV.kind==="ble"){await connectBle()}
+ else{DEV.on=true;DEV.msg="Connecting…";DEV.timer=setInterval(pollHttp,3000);pollHttp()}
+}
+const NUS="6e400001-b5a3-f393-e0a9-e50e24dcca9e",NUS_TX="6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+async function connectBle(){
+ if(!navigator.bluetooth){DEV.msg="Web Bluetooth isn’t available here. Use Chrome or Edge on desktop or Android.";return}
+ try{
+  const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[NUS]});
+  const srv=await dev.gatt.connect(),svc=await srv.getPrimaryService(NUS),ch=await svc.getCharacteristic(NUS_TX);
+  let buf="";const dec=new TextDecoder();
+  ch.addEventListener("characteristicvaluechanged",async e=>{buf+=dec.decode(e.target.value);let i;
+   while((i=buf.indexOf("\n"))>=0){const line=buf.slice(0,i).trim();buf=buf.slice(i+1);if(line){try{await ingest(JSON.parse(line))}catch(x){}}refresh()}});
+  await ch.startNotifications();
+  dev.addEventListener("gattserverdisconnected",()=>{if(DEV.ble!==dev)return;DEV.ble=null;DEV.on=false;DEV.msg="Bluetooth device disconnected";refresh()});
+  DEV.ble=dev;DEV.on=true;DEV.msg="Connected: "+(dev.name||"Raspberry Pi 4")+" over Bluetooth";
+ }catch(e){DEV.msg="Couldn’t connect over Bluetooth: "+(e.message||e)}
+}
+async function readLoop(){
+ const dec=new TextDecoderStream();DEV.port.readable.pipeTo(dec.writable).catch(()=>{});DEV.reader=dec.readable.getReader();let buf="";
+ try{for(;;){const{value,done}=await DEV.reader.read();if(done)break;buf+=value;let i;
+  while((i=buf.indexOf("\n"))>=0){const line=buf.slice(0,i).trim();buf=buf.slice(i+1);if(line){try{await ingest(JSON.parse(line))}catch(e){}}refresh()}}}catch(e){}
+}
+async function pollHttp(){
+ let msg;
+ try{const r=await fetch(DEV.url+(DEV.url.includes("?")?"&":"?")+"since="+DEV.since,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
+  for(const ev of await r.json()){await ingest(ev);DEV.since=Math.max(DEV.since,ev.ts||0)}msg="Connected: Raspberry Pi over Wi-Fi"}
+ catch(e){msg="Can’t reach the Pi ("+(e.message||e)+"). Pages published on claude.ai can’t call devices on your network; serve this page from the Pi to use Wi-Fi mode."}
+ if(msg!==DEV.msg){DEV.msg=msg;refresh()}else if(DEV.on)refresh();
+}
+async function disconnect(quiet){
+ clearInterval(DEV.timer);DEV.timer=null;DEV.on=false;
+ try{if(DEV.ble){const b=DEV.ble;DEV.ble=null;if(b.gatt.connected)b.gatt.disconnect()}if(DEV.reader){await DEV.reader.cancel();DEV.reader=null}if(DEV.port){await DEV.port.close();DEV.port=null}}catch(e){}
+ if(!quiet){DEV.msg="Not connected";render()}
+}
+async function deviceView(){
+ const [ds,sps,us]=await Promise.all([DB.all("detections"),DB.all("species"),DB.all("units")]),spb=Object.fromEntries(sps.map(s=>[s.id,s.name])),ub=Object.fromEntries(us.map(u=>[u.id,u.name]));
+ const recent=ds.sort((a,b)=>b.ts-a.ts).slice(0,8);
+ return `<div class="card"><h2>Monitoring device</h2>
+ <p><b class="${DEV.on?"up":""}">${DEV.on?"● ":"○ "}</b>${esc(DEV.msg)}</p>
+ ${/Android/i.test(navigator.userAgent)?`<p class="muted">On Android: turn on Bluetooth and Location (Android needs Location on to scan), tap Connect, allow “Nearby devices” if asked, and pick BirdWatch. USB cable connections usually aren’t available in phone browsers.</p>`:""}
+ <div class="row"><select id="kind" aria-label="Connection type">
+ <option value="demo" ${DEV.kind==="demo"?"selected":""}>Demo device (simulated)</option>
+ <option value="serial" ${DEV.kind==="serial"?"selected":""}>Raspberry Pi 4: USB cable</option>
+ <option value="ble" ${DEV.kind==="ble"?"selected":""}>Raspberry Pi 4: Bluetooth</option>
+ <option value="http" ${DEV.kind==="http"?"selected":""}>Raspberry Pi 4: Wi-Fi (HTTP)</option></select>
+ ${DEV.on?`<button class="btn alt" data-disc>Disconnect</button>`:`<button class="btn" data-conn>Connect</button>`}</div>
+ ${DEV.kind==="http"?`<input id="url" style="margin-top:8px" aria-label="Pi address" value="${esc(DEV.url)}">`:""}
+ <h2 style="margin-top:14px">My devices</h2>
+ ${us.map(u=>`<div class="log row" style="justify-content:space-between"><div><b>${esc(u.name)}</b> <span class="muted">· ${SAMPLE_IDS.includes(u.id)&&!u.rid?"sample unit":"Raspberry Pi 4"}${u.lat!=null?` · ${u.lat.toFixed(5)}, ${u.lat!=null?u.lon.toFixed(5):""}`:" · no position yet"}</span></div><button class="btn alt sm" data-rename="${esc(u.id)}">Rename</button></div>`).join("")}
+ <p class="muted">A new Raspberry Pi 4 asks for a name the first time it sends a detection. You can rename any device here.</p>
+ <h2 style="margin-top:14px">Latest detections from the device</h2>
+ ${recent.map(d=>`<div class="log"><b>${esc(spb[d.sp]||d.sp)}</b> <span class="muted">· ${esc(ub[d.unit]||d.unit)} · ${new Date(d.ts).toLocaleTimeString()}${d.lat!=null?` · ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}${d.acc?` ±${d.acc} m`:""}`:" · no position"}</span></div>`).join("")}
+ <details style="margin-top:12px"><summary>Raspberry Pi 4 setup</summary>
+ <ol class="muted"><li>Copy <code>pi_device.py</code> to the Pi 4. Set its position, give each Pi a different hostname, and replace <code>identify()</code> with your detection code.</li>
+ <li><b>Bluetooth:</b> run <code>pip install bless</code>, then <code>python3 pi_device.py --ble</code>. Press Connect here and pick “BirdWatch”.</li>
+ <li><b>USB cable:</b> set up the Pi 4’s USB-C port as a serial gadget, run <code>python3 pi_device.py --serial /dev/ttyGS0</code>, plug it into your computer and press Connect.</li>
+ <li><b>Wi-Fi:</b> run <code>pip install flask</code> and <code>python3 pi_device.py</code>, and host this page on the Pi or your own network.</li></ol>
+ <p class="muted">The Pi does the listening and identifying, then sends one detection per message. Bird Watch stores each one in the database, so the map and graphs update.</p>
+ <pre>{"unit":"Unit A","species":"Mallard","ts":1767225600000,
+ "lat":40.616800,"lon":-73.821200,"acc":6.5}</pre>
+ <p class="muted">USB serial: one JSON object per line at 115200 baud. Wi-Fi: GET /detections?since=&lt;ts&gt; returns a JSON array of these objects (with CORS allowed). lat and lon (decimal degrees) and acc (meters) are optional; send them for exact positions. Without them a detection sits at the unit’s fixed location, and with neither it isn’t plotted. The pi_device.py file has both.</p></details></div>`;
+}
+// ================= app shell =================
+async function enterApp(){
+ startLoc();
+ const c=$.querySelector(".auth");
+ if(c&&!matchMedia("(prefers-reduced-motion:reduce)").matches){c.classList.add("leave");await new Promise(r=>setTimeout(r,300))}
+ S.entering=true;await render();
+}
+let tok=0;
+async function render(){
+ const my=++tok;
+ document.getElementById("nav").hidden=!S.user;
+ document.getElementById("who").innerHTML=S.user?`<span class="badge">${esc(S.user.name)}</span><button class="btn alt sm" data-settings aria-label="Settings" title="Settings" style="padding:6px 9px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="btn alt sm" data-out>Sign out</button>`:"";
+ if(!S.user){$.innerHTML=authView();if(S.authAnim){S.authAnim=false;$.firstElementChild.classList.add("enter")}return}
+ document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===S.tab));
+ let html;try{html=await({map:mapView,trends:trendsView,alerts:alertsView,device:deviceView}[S.tab])()}
+ catch(e){html=`<div class="card"><p class="err">Couldn’t read the database. Reload the page to retry.</p></div>`}
+ if(my===tok){$.innerHTML=html;if(S.tab==="map")drawMap();
+  if(S.entering){S.entering=false;[...$.children].forEach((el,i)=>{el.style.animationDelay=i*70+"ms";el.classList.add("enter")});
+   ["nav","who"].forEach(id=>{const el=document.getElementById(id);el.classList.remove("enter");void el.offsetWidth;el.classList.add("enter")})}}
+}
+document.getElementById("nav").addEventListener("click",e=>{const t=e.target.closest("[data-tab]");if(t){S.tab=t.dataset.tab;render()}});
+// ---- naming Raspberry Pis ----
+let nameQ=[];
+const SAMPLE_IDS=["A","B","C"];
+function wrap(id){let el=document.getElementById(id);if(!el){el=document.createElement("div");el.id=id;document.body.appendChild(el)}return el}
+async function renameUnit(id,name){const u=await DB.get("units",id);if(!u)return;u.rid=u.rid||u.name;u.name=name.slice(0,40);await DB.putMany("units",[u])}
+async function nameDialog(){
+ const w=wrap("namewrap");
+ if(!nameQ.length){w.hidden=true;return}
+ const q=nameQ[0],u=await DB.get("units",q.id);
+ if(!u){nameQ.shift();return nameDialog()}
+ w.innerHTML=`<div class="sheet-bg"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Name this Raspberry Pi">
+ <h2>${q.isNew?"New Raspberry Pi 4 found":"Rename device"}</h2>
+ <p class="muted">${q.isNew?`It introduced itself as “${esc(u.rid||u.name)}”. What would you like to call it?`:`Choose a new name for “${esc(u.name)}”.`}</p>
+ <input id="devname" value="${esc(u.name)}" maxlength="40" aria-label="Device name" autocomplete="off">
+ <div class="row"><button class="btn" data-namesave>Save name</button><button class="btn alt" data-nameskip>${q.isNew?`Keep “${esc(u.name)}”`:"Cancel"}</button></div></div>`;
+ w.hidden=false;
+ setTimeout(()=>{const i=document.getElementById("devname");if(i){i.focus();i.select()}},50);
+}
+document.addEventListener("click",async e=>{
+ const w=document.getElementById("namewrap");if(!w||w.hidden||!w.contains(e.target))return;
+ const save=e.target.closest("[data-namesave]"),skip=e.target.closest("[data-nameskip]");
+ if(!save&&!skip)return;
+ if(save){const v=document.getElementById("devname").value.trim();if(v)await renameUnit(nameQ[0].id,v)}
+ nameQ.shift();await nameDialog();refresh();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="devname"){e.preventDefault();const b=document.querySelector("[data-namesave]");if(b)b.click()}});
+// ---- settings sheet ----
+function sheetHtml(){
+ const lc=S.user.locConsent;
+ return `<div class="sheet-bg" data-close></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+ <div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Settings</h2><button class="btn alt sm" data-close aria-label="Close settings">Close</button></div>
+ <div class="log"><b>Account</b><div class="muted">${esc(S.user.name)} · ${esc(S.user.email)}</div></div>
+ <div class="log"><b>Location</b>
+  <label class="switch"><input type="checkbox" id="locsw" ${lc===true?"checked":""}> Allow the app to use my location</label>
+  <div class="muted">${lc===true?"On. Your position is only used to show you on the map and isn’t saved. Tap My location on the map to see the blue dot.":lc===false?"Off. Turn this on to see where you are on the map.":"Not set yet."}</div>
+  ${S.locMsg?`<div class="err" style="margin-top:6px">${esc(S.locMsg)}</div>`:""}</div>
+ <div class="log"><b>Offline use</b><div class="muted">${navigator.onLine?"You’re online.":"You’re offline."} Sign-in, trends, alerts, the map outlines and your data all work without internet, and the Raspberry Pi connects over Bluetooth or USB with no network at all. Satellite photos need internet: they are fetched fresh whenever you’re online, and saved copies are replaced every year.<br>${S.swReady?"This page is saved on this device, so it opens offline.":"This page isn’t saved for offline opening yet. That needs a copy hosted on your own site, or the page file saved to your device (see the README)."}</div></div>
+ <div class="log"><b>Install on your phone</b>${installEv?`<div class="row" style="margin-top:6px"><button class="btn sm" data-install>Install app</button></div>`:`<div class="muted">${/Android/i.test(navigator.userAgent)?"In Chrome, tap ⋮ then Install app (or Add to Home screen). Open the page in its own Chrome tab first, not inside Claude.":"On an Android phone, open this page in Chrome, tap ⋮, then Install app or Add to Home screen."}</div>`}</div>
+ <div class="row" style="margin-top:12px"><button class="btn alt" data-out>Sign out</button></div></div>`;
+}
+function showSheet(){
+ let el=document.getElementById("sheetwrap");
+ if(!el){el=document.createElement("div");el.id="sheetwrap";document.body.appendChild(el)}
+ el.innerHTML=sheetHtml();el.hidden=false;S.sheet=true;
+}
+function hideSheet(){const el=document.getElementById("sheetwrap");if(el)el.hidden=true;S.sheet=false}
+async function signOut(){hideSheet();await disconnect(true);try{localStorage.removeItem("bw.session")}catch(x){}stopLoc();S.user=null;S.authAnim=true;render()}
+document.getElementById("who").addEventListener("click",e=>{if(e.target.closest("[data-out]"))signOut();else if(e.target.closest("[data-settings]"))showSheet()});
+document.addEventListener("click",e=>{
+ const w=document.getElementById("sheetwrap");if(!w||w.hidden||!w.contains(e.target))return;
+ if(e.target.closest("[data-out]"))signOut();else if(e.target.closest("[data-close]"))hideSheet();
+ else if(e.target.closest("[data-install]")&&installEv){installEv.prompt();installEv=null;showSheet()}
+});
+document.addEventListener("change",async e=>{if(e.target.id==="locsw"){await setConsent(e.target.checked);if(S.sheet)showSheet()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&S.sheet)hideSheet()});
+$.addEventListener("click",async e=>{
+ const m=e.target.closest("[data-m]");if(m){S.sel=m.dataset.m;render();return}
+ const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+ if(d.r){S.range=d.r;render()}
+ else if(d.auth){S.authMode=d.auth;S.authErr="";render()}
+ else if("conn" in d){await connect();render()}
+ else if("disc" in d)disconnect();
+ else if(d.loc)await setConsent(d.loc==="yes");
+ else if(d.rename){nameQ=[{id:d.rename,isNew:false}];await nameDialog()}
+ else if(d.mz&&S.md){if(!S.v)fitView(true);
+  if(d.mz==="in")zoomAt(MW/2,MH/2,1);else if(d.mz==="out")zoomAt(MW/2,MH/2,-1);
+  else if(d.mz==="sel"){const m=S.md.dets.find(x=>x.id===S.sel);if(m&&m.lat!=null)setView(m.lon,m.lat,17)}
+  else if(d.mz==="me"){locateMe();return}
+  else if(d.mz==="sat"){S.sat=!S.sat;render();return}
+  else fitView(d.mz==="world");
+  drawMap()}
+});
+$.addEventListener("change",e=>{
+ if(e.target.id==="sp"){S.sp=e.target.value;render()}
+ if(e.target.id==="kind"){DEV.kind=e.target.value;render()}
+});
+$.addEventListener("input",e=>{if(e.target.id==="url")DEV.url=e.target.value});
+// map gestures: drag to pan, wheel / pinch to zoom
+const PTR=new Map();let raf=0;
+const redraw=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawMap()})};
+$.addEventListener("pointerdown",e=>{if(e.target.closest("#map")&&S.v)PTR.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY})});
+$.addEventListener("pointermove",e=>{
+ const s=document.getElementById("map"),p=PTR.get(e.pointerId);if(!s||!p)return;
+ if(!S.drag){if(PTR.size===1&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<5)return;S.drag=true;try{s.setPointerCapture(e.pointerId)}catch(x){}}
+ const r=s.getBoundingClientRect(),k=MW/r.width;
+ if(PTR.size===2){const [a,b]=[...PTR.values()],d0=Math.hypot(a.x-b.x,a.y-b.y);p.x=e.clientX;p.y=e.clientY;
+  const d1=Math.hypot(a.x-b.x,a.y-b.y);if(d0>0)zoomAt(((a.x+b.x)/2-r.left)*k,((a.y+b.y)/2-r.top)*k,Math.log2(d1/d0))}
+ else{S.v.cx-=(e.clientX-p.x)*k/wpx();S.v.cy-=(e.clientY-p.y)*k/wpx();p.x=e.clientX;p.y=e.clientY;clampView()}
+ redraw();
+});
+const endPtr=e=>{PTR.delete(e.pointerId);if(!PTR.size)setTimeout(()=>{S.drag=false;redraw()},60)};
+$.addEventListener("pointerup",endPtr);$.addEventListener("pointercancel",endPtr);
+$.addEventListener("wheel",e=>{const s=e.target.closest("#map");if(!s||!S.v)return;e.preventDefault();
+ const r=s.getBoundingClientRect(),k=MW/r.width;zoomAt((e.clientX-r.left)*k,(e.clientY-r.top)*k,-e.deltaY*.002);redraw()},{passive:false});
+$.addEventListener("submit",async e=>{
+ e.preventDefault();if(e.target.id!=="authform")return;
+ const email=document.getElementById("a-email").value.trim().toLowerCase(),pw=document.getElementById("a-pw").value;
+ try{
+  if(!crypto.subtle)throw new Error("nosec");
+  if(S.authMode==="up"){
+   const name=document.getElementById("a-name").value.trim();
+   if(pw.length<6){S.authErr="Password must be at least 6 characters.";render();return}
+   if(await DB.get("users",email)){S.authErr="That email already has an account.";render();return}
+   const salt=Array.from(crypto.getRandomValues(new Uint8Array(8)),hex).join("");
+   const lc=document.querySelector('input[name="loc"]:checked');const u={email,name:name||email,salt,hash:await hash(pw,salt),locConsent:!!lc&&lc.value==="yes"};await DB.putMany("users",[u]);S.user=u;
+  }else{
+   const u=await DB.get("users",email);
+   if(!u||u.hash!==await hash(pw,u.salt)){S.authErr="Email or password is incorrect.";render();return}
+   S.user=u;
+  }
+  try{localStorage.setItem("bw.session",email);localStorage.setItem("bw.email",email)}catch(x){}
+  S.authErr="";await enterApp();
+ }catch(x){S.authErr="Sign-in isn’t available in this browser.";render()}
+});
+setInterval(()=>{if(!S.drag&&S.user&&S.tab==="map"&&!DEV.on)render()},5000);
+// installable on Android: manifest built at runtime + install prompt
+let installEv=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEv=e;if(S.sheet)showSheet()});
+(function(){try{
+ const base=location.href.split("#")[0].split("?")[0],icon="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#2e7d32"/><text x="256" y="370" font-size="300" text-anchor="middle">🐦</text></svg>');
+ const man={name:"Bird Watch",short_name:"Bird Watch",start_url:base,scope:base.replace(/[^/]*$/,""),display:"standalone",background_color:"#101610",theme_color:"#2e7d32",icons:[{src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"any"}]};
+ const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:"application/manifest+json"}));document.head.appendChild(l);
+}catch(e){}})();
+// ---- offline support ----
+function updateNet(){const n=document.getElementById("net");if(!n)return;const on=navigator.onLine;n.textContent=on?"Online":"Offline mode";n.style.color=on?"":"var(--warn)"}
+const reprobe=()=>{const im=new Image();im.onload=()=>{S.tilesOK=true;if(S.user&&S.tab==="map")render()};im.onerror=()=>{S.tilesOK=false;if(S.user&&S.tab==="map")render()};im.src=tileUrl(0,0,0)};
+addEventListener("online",()=>{updateNet();reprobe();if(S.sheet)showSheet()});
+addEventListener("offline",()=>{updateNet();S.tilesOK=false;if(S.user&&S.tab==="map")render();if(S.sheet)showSheet()});
+updateNet();
+addEventListener("load",()=>{
+ if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  navigator.serviceWorker.ready.then(()=>{S.swReady=true;if(S.sheet)showSheet()}).catch(()=>{});
+ }
+});
+(function probe(){const im=new Image();im.onload=()=>{S.tilesOK=true;if(S.user&&S.tab==="map")render()};im.onerror=()=>{S.tilesOK=false;if(S.user&&S.tab==="map")render()};im.src=tileUrl(0,0,0)})();
+(async()=>{
+ await DB.open();
+ try{await seed()}catch(e){}
+ let em=null;try{em=localStorage.getItem("bw.session")}catch(e){}
+ if(em){try{S.user=(await DB.get("users",em))||null}catch(e){}}
+ S.entering=!!S.user;startLoc();
+ render();
+})();
+</script>
+</body>
+</html>
